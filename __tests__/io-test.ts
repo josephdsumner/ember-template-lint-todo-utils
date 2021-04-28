@@ -31,6 +31,17 @@ const TODO_DATA: TodoData = {
   createdDate: getDatePart(new Date('12/11/2020')).getTime(),
 };
 
+const TODO_DATA_FOR_TEMPLATE_LINT: TodoData = {
+  engine: 'ember-template-lint',
+  filePath: 'app/templates/components/add-ssh-key.hbs',
+  ruleId: 'require-input-label',
+  line: 3,
+  column: 4,
+  createdDate: getDatePart(new Date('12/11/2020')).getTime(),
+  warnDate: getDatePart(new Date('12/16/2020')).getTime(),
+  errorDate: getDatePart(new Date('12/21/2020')).getTime(),
+};
+
 async function readFiles(todoStorageDir: string) {
   const fileNames: string[] = [];
   const todoFileDirs = await readdir(todoStorageDir);
@@ -72,10 +83,16 @@ describe('io', () => {
   });
 
   describe('todoFileNameFor', () => {
-    it('can generate a unique hash for todo', () => {
+    it('can generate a unique hash for eslint todo', () => {
       const fileName = todoFileNameFor(TODO_DATA);
 
       expect(fileName).toEqual('6e3be839');
+    });
+
+    it('can generate a unique hash for template lint todo', () => {
+      const fileName = todoFileNameFor(TODO_DATA_FOR_TEMPLATE_LINT);
+
+      expect(fileName).toEqual('0766c324');
     });
 
     it('generates idempotent file names', () => {
@@ -620,8 +637,27 @@ describe('io', () => {
       `);
     });
 
+    it('creates items to delete because they are expired', async () => {
+      const [, expired] = getTodoBatchesSync(
+        new Map(),
+        buildTodoData(tmp, getFixture('new-batches', tmp)),
+        { shouldRemove: () => true }
+      );
+
+      expect([...expired.keys()]).toMatchInlineSnapshot(`
+        Array [
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/6e3be839",
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/aad8bc25",
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/53e7a9a0",
+          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/b9046d34",
+          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
+        ]
+      `);
+    });
+
+
     it('creates all batches', async () => {
-      const [add, remove, stable] = getTodoBatchesSync(
+      const [add, remove, stable, expired] = getTodoBatchesSync(
         buildTodoData(tmp, getFixture('new-batches', tmp)),
         buildTodoData(tmp, getFixture('existing-batches', tmp)),
         { shouldRemove: () => true }
@@ -644,6 +680,12 @@ describe('io', () => {
         Array [
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/b9046d34",
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
+        ]
+      `);
+      expect([...expired.keys()]).toMatchInlineSnapshot(`
+        Array [
+          "07d3818b8afefcdd7db6d52743309fdbb85313f0/66256fb7",
+          "07d3818b8afefcdd7db6d52743309fdbb85313f0/8fd35486",
         ]
       `);
     });
