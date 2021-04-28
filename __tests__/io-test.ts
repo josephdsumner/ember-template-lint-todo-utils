@@ -156,7 +156,7 @@ describe('io', () => {
       expect(readTodosSync(tmp).size).toEqual(18);
     });
 
-    it("generates todos only if previous todo doesn't exist", async () => {
+    it("generates eslint todos only if a previous todo doesn't exist", async () => {
       const initialTodos: LintResult[] = [
         {
           filePath: '{{path}}/app/controllers/settings.js',
@@ -248,7 +248,7 @@ describe('io', () => {
       });
     });
 
-    it('does not remove old todos if todos no longer contains violations if shouldRemove returns false', async () => {
+    it('does not remove old todos when todos no longer contain violations if shouldRemove returns false', async () => {
       const fixture = getFixture('eslint-with-errors', tmp);
       const todoDir = getTodoStorageDirPath(tmp);
 
@@ -270,7 +270,7 @@ describe('io', () => {
     });
   });
 
-  describe('writeTodosSync for single file', () => {
+  describe('writeTodosSync (eslint) for single file', () => {
     it('generates todos for a specific filePath', async () => {
       const todoDir = getTodoStorageDirPath(tmp);
       const [added] = writeTodosSync(tmp, getFixture('single-file-todo', tmp), {
@@ -343,7 +343,7 @@ describe('io', () => {
     });
   });
 
-  describe('writeTodos', () => {
+  describe('writeTodos (template lint)', () => {
     it("creates .lint-todo directory if one doesn't exist", async () => {
       const todoDir = getTodoStorageDirPath(tmp);
 
@@ -352,19 +352,21 @@ describe('io', () => {
       expect(existsSync(todoDir)).toEqual(true);
     });
 
-    it("doesn't write files when no todos provided", async () => {
+    it("doesn't write files when there are no todos to add", async () => {
       await writeTodos(tmp, []);
 
       expect((await readTodos(tmp)).size).toEqual(0);
     });
 
     it('generates todos when todos provided', async () => {
-      const [added] = await writeTodos(tmp, getFixture('eslint-with-errors', tmp));
+      const [added] = await writeTodos(tmp, getFixture('ember-template-lint-with-errors', tmp));
 
-      expect(added).toEqual(18);
-      expect((await readTodos(tmp)).size).toEqual(18);
+      expect(added).toEqual(39);
+      expect((await readTodos(tmp)).size).toEqual(39);
     });
 
+    // TODO I thought that writeTodos was for ETL and writeTodosSync was for eslint?
+    // if that's true, shouldn't this be a template lint test not an eslint test?
     it("generates todos only if previous todo doesn't exist", async () => {
       const initialTodos: LintResult[] = [
         {
@@ -637,27 +639,8 @@ describe('io', () => {
       `);
     });
 
-    it('creates items to delete because they are expired', async () => {
-      const [, expired] = getTodoBatchesSync(
-        new Map(),
-        buildTodoData(tmp, getFixture('new-batches', tmp)),
-        { shouldRemove: () => true }
-      );
-
-      expect([...expired.keys()]).toMatchInlineSnapshot(`
-        Array [
-          "0a1e71cf4d0931e81f494d5a73a550016814e15a/6e3be839",
-          "0a1e71cf4d0931e81f494d5a73a550016814e15a/aad8bc25",
-          "0a1e71cf4d0931e81f494d5a73a550016814e15a/53e7a9a0",
-          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/b9046d34",
-          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
-        ]
-      `);
-    });
-
-
     it('creates all batches', async () => {
-      const [add, remove, stable, expired] = getTodoBatchesSync(
+      const [add, remove, stable] = getTodoBatchesSync(
         buildTodoData(tmp, getFixture('new-batches', tmp)),
         buildTodoData(tmp, getFixture('existing-batches', tmp)),
         { shouldRemove: () => true }
@@ -680,12 +663,6 @@ describe('io', () => {
         Array [
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/b9046d34",
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
-        ]
-      `);
-      expect([...expired.keys()]).toMatchInlineSnapshot(`
-        Array [
-          "07d3818b8afefcdd7db6d52743309fdbb85313f0/66256fb7",
-          "07d3818b8afefcdd7db6d52743309fdbb85313f0/8fd35486",
         ]
       `);
     });
@@ -728,8 +705,26 @@ describe('io', () => {
       `);
     });
 
+    it('creates items to delete because they are expired', async () => {
+      const [, expired] = await getTodoBatches(
+        new Map(),
+        buildTodoData(tmp, getFixture('new-batches', tmp)),
+        { shouldRemove: () => true }
+      );
+
+      expect([...expired.keys()]).toMatchInlineSnapshot(`
+        Array [
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/6e3be839",
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/aad8bc25",
+          "0a1e71cf4d0931e81f494d5a73a550016814e15a/53e7a9a0",
+          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/b9046d34",
+          "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
+        ]
+      `);
+    });
+
     it('creates all batches', async () => {
-      const [add, remove, stable] = await getTodoBatches(
+      const [add, remove, stable, expired] = await getTodoBatches(
         buildTodoData(tmp, getFixture('new-batches', tmp)),
         buildTodoData(tmp, getFixture('existing-batches', tmp)),
         { shouldRemove: () => true }
@@ -754,6 +749,7 @@ describe('io', () => {
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
         ]
       `);
+      expect([...expired.keys()]).toMatchInlineSnapshot(`Array []`);
     });
   });
 });
