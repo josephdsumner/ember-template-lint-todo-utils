@@ -31,6 +31,7 @@ const TODO_DATA: TodoData = {
   createdDate: getDatePart(new Date('12/11/2020')).getTime(),
 };
 
+// We have to do this because eslint doesn't support errorDate and warnDate
 const TODO_DATA_FOR_TEMPLATE_LINT: TodoData = {
   engine: 'ember-template-lint',
   filePath: 'app/templates/components/add-ssh-key.hbs',
@@ -712,6 +713,7 @@ describe('io', () => {
         { shouldRemove: () => true }
       );
 
+      // this is the same as the remove array, should this be passing?
       expect([...expired.keys()]).toMatchInlineSnapshot(`
         Array [
           "0a1e71cf4d0931e81f494d5a73a550016814e15a/6e3be839",
@@ -749,6 +751,7 @@ describe('io', () => {
           "60a67ad5c653f5b1a6537d9a6aee56c0662c0e35/092271fa",
         ]
       `);
+      // figure out what this array should be
       expect([...expired.keys()]).toMatchInlineSnapshot(`Array []`);
     });
   });
